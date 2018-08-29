@@ -21,6 +21,7 @@
 
 // menu number
 #define MENU_PLAY '1'
+#define MENU_RANK '2'
 #define MENU_EXIT '4'
 
 // 사용자 이름의 길이
@@ -29,10 +30,25 @@
 #define CHILDREN_MAX 36
 
 typedef struct _RecNode{
+/*
 	int lv,score;
 	char (*f)[WIDTH];
+*/
 	struct _RecNode *c[CHILDREN_MAX];
+
+	int level;
+	int acScore;
+	char recField[HEIGHT][WIDTH];
+	struct _RecNode *parent;
 } RecNode;
+
+//
+typedef struct _Node{
+	char name[NAMELEN];
+	int score;
+	struct _Node *next;
+}Node;
+//
 
 /* [blockShapeID][# of rotate][][]*/
 const char block[NUM_OF_SHAPE][NUM_OF_ROTATE][BLOCK_HEIGHT][BLOCK_WIDTH] ={
@@ -329,6 +345,9 @@ void rank();
  *	input	: none
  *	return	: none
  ***********************************************************/
+void rankfirst();
+void ranksecond();
+void rankthird();
 void writeRankFile();
 
 /***********************************************************
@@ -343,6 +362,7 @@ void newRank(int score);
  *	input	: (RecNode*) 추천 트리의 루트
  *	return	: (int) 추천 블럭 배치를 따를 때 얻어지는 예상 스코어
  ***********************************************************/
+void DrawRecommend(int y, int x, int blockID,int blockRotate);
 int recommend(RecNode *root);
 
 /***********************************************************

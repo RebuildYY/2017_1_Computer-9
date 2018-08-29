@@ -2,19 +2,22 @@
 
 static struct sigaction act, oact;
 
+Node *head=NULL, *currnode=NULL;
+int Nodenum=0;
 int main(){
 	int exit=0;
 
 	initscr();
 	noecho();
 	keypad(stdscr, TRUE);	
-
+	
 	srand((unsigned int)time(NULL));
-
+	createRankList();
 	while(!exit){
 		clear();
 		switch(menu()){
 		case MENU_PLAY: play(); break;
+		case MENU_RANK: rank(); break;
 		case MENU_EXIT: exit=1; break;
 		default: break;
 		}
@@ -226,7 +229,6 @@ void play(){
 			return;
 		}
 	}while(!gameOver);
-
 	alarm(0);
 	getch();
 	DrawBox(HEIGHT/2-1,WIDTH/2-5,1,10);
@@ -316,6 +318,8 @@ void DrawChange(char f[HEIGHT][WIDTH],int command,int currentBlock,int blockRota
 			}
 		}
 	}
+	
+//	DrawRecommend(recommendY, recommendX, currentBlock, recommendR);
 	DrawShadow(blockY,blockX, currentBlock, blockRotate);//그림자를 먼저 그려야 마지막에 블록이 남는다.
 	DrawBlock(blockY, blockX, currentBlock, blockRotate,' ');
 	move(HEIGHT,WIDTH+10);
@@ -339,6 +343,13 @@ void BlockDown(int sig){
 		nextBlock[0] = nextBlock[1];
 		nextBlock[1] = nextBlock[2];
 		nextBlock[2] = rand() % 7;
+//		for(i=0;i<HEIGHT;i++){
+//			for(j=0;j<WIDTH;j++){
+//				recRoot->recField[i][j] = field[i][j];
+//			}
+//		}
+//		recRoot->level = 3;
+//		recommend(recRoot);
 		DrawNextBlock(nextBlock);
 		blockRotate =0;
 		blockY = -1;
@@ -429,29 +440,274 @@ void DrawShadow(int y, int x, int blockID,int blockRotate){
 
 void createRankList(){
 	// user code
+	FILE *fp;
+	int i;
+	char user[21];
+	int scorec;
+	Node *temp;
+	fp = fopen("rank.txt","r");
+	fscanf(fp,"%d",&Nodenum);
+	if(Nodenum != 0){
+		for(i = 0; i<Nodenum; i++){
+			temp = (Node*)malloc(sizeof(Node));
+			fscanf(fp,"%s %d\n", user, &scorec);
+			strcpy(temp->name,user);
+			temp->score = scorec;
+			temp->next = NULL;
+			if(head == NULL){
+				head = temp;
+				currnode = temp;
+			}
+			else{
+				currnode->next = temp;
+				currnode = temp;
+			}
+		}
+	}
+	fclose(fp);
 }
 
 void rank(){
 	// user code
+	clear();
+	printw("1. list ranks from X to Y\n");
+	printw("2. list ranks by a specific name\n");
+	printw("3. delete a specific rank\n");
+	switch(wgetch(stdscr)){
+		case '1': rankfirst(); break;
+		case '2': ranksecond(); break;
+		case '3': rankthird(); break; 
+	}
+}
+void rankfirst(){//menu의 rank시스템 중 첫번째 기능
+	int x=0,y=0;
+	int i=1;
+	Node *target;
+	target = head;
+	echo();
+	printw("X: ");
+	scanw("%d",&x);
+	printw("Y: ");
+	scanw("%d", &y);
+	printw("	name	|	score\n");
+	printw("--------------------------------\n");
+	if(Nodenum != 0){//파일이 비어있지 않을 경우 실행.
+		if(x != 0 && y != 0){//x와 y를 모두 받아들였을 경우 실행.
+			if(x<=y){
+				while(i<=y){
+					if(x<=i){
+						printw("%s		| %d\n",target->name,target->score);
+					}
+					target = target->next;
+					i++;
+				}	
+			}
+			else {
+				printw("search failure: no rank in the list\n");
+			}
+		}
+		else if(x == 0 && y != 0){//y의 값만 받아들였을 경우 실행.
+			while(i<=y){
+				printw("%s		| %d\n",target->name,target->score);
+				target = target->next;
+				i++;
+			}
+		}
+		else if(x != 0 && y == 0){//x의 값만 받아들였을 경우 실행.
+			while(i <= Nodenum){
+				if(i>=x){
+					printw("%s		| %d\n",target->name,target->score);
+				}
+				target = target->next;
+				i++;
+			}
+		}
+		else if(x == 0 && y == 0){//x와 y 둘다 받지 않았을 경우 실행.
+				while(1){
+				printw("%s		| %d\n",target->name,target->score);
+				if(target->next == NULL){
+						break;
+				}
+				target = target->next;
+				i++;
+			}
+		}
+	}
+	else{//파일이 비어있을 경우 실행.
+		printw("\n	empty!!\n\n");
+	}
+	scanw("%d",&x);
+	noecho();
+}
+void ranksecond(){//메뉴에서 rank시스템 중 2번째 기증을 구현한 함수.
+	char user[NAMELEN];
+	int i=0;
+	Node *target;
+	target = head;
+	echo();
+	printw("Input the name: ");
+	scanw("%s",user);
+	printw("	name	|	score\n");
+	printw("--------------------------------\n");
+	while(1){
+		if(strcmp(target->name,user)==0){//찾고자 하는 정보와 일치하면 출력.
+			printw("%s		| %d\n",target->name,target->score);
+			i++;
+		}
+		if(target->next == NULL){//모든 리스트를 찾아보고 실행된다.
+			if(i == 0){//찾고자 하는 정보가 없을 경우 출력.
+				printw("\nsearch failure: no name in the list\n");
+			}
+			break;
+		}
+		target = target->next;
+	}
+	scanw("%d",&i);
+	noecho();
+}
+void rankthird(){
+	int i,ranknum;
+	Node *target;
+	Node *rmnode;
+	target = head;
+	echo();
+	printw("Input the rank: ");
+	scanw("%d",&ranknum);
+	if(ranknum > Nodenum){//랭킹을 벗어나는 수를 받았을 겨우 실행.
+		printw("\nSearch failure: the rank not in the list\n");
+	}
+	else{
+		if(ranknum == 1){//링크드리스트의 첫부분을 지울경우 실행.
+			rmnode = target;
+			head = target->next;
+		}
+		else{
+			for(i = 1; i < ranknum-1; i++){
+				target = target->next;
+			}
+			rmnode = target->next;
+			target->next = target->next->next;
+		}
+		printw("\nresult: the rank deleted\n");
+		free(rmnode);
+		Nodenum--;
+		writeRankFile();
+	}
+	scanw("%d",&ranknum);
+	noecho();
+}
+void writeRankFile(){//rank.txt에 처리한 정보를 저장한다.
+	// user code
+	FILE *fp;
+	int i=0;
+	Node *target;
+	target = head;
+	fp = fopen("rank.txt","w");
+//	if(Nodenum != 0){
+		fprintf(fp,"%d\n", Nodenum);
+		for(i=0; i<Nodenum; i++){
+			fprintf(fp,"%s %d\n",target->name,target->score);
+			target = target->next;
+		}
+//	}
+	fclose(fp);
 }
 
-void writeRankFile(){
+void newRank(int score){//게임이 끝나고 새로운 정보를 받아들여 랭크에 추가한다.
 	// user code
-}
-
-void newRank(int score){
-	// user code
+	char user[NAMELEN];
+	Node *target;
+	Node *new;
+	new = (Node*)malloc(sizeof(Node));	
+	clear();
+	echo();
+	printw("your name: ");
+	scanw("%s",user);
+	strcpy(new->name,user);
+	new->score = score;
+	new->next = NULL;
+	target = head;
+	while(1){
+		if(Nodenum == 0){//비어있는 링크드리스트일 경우.
+			head = new;
+			currnode = new;
+			break;
+		}
+		else if(target->next == NULL){//링크드리스트의 끝에 붙일 겨우.
+			target->next = new;
+			break;
+		}
+		else if(target->score > score && score >= target->next->score){
+			new->next = target->next;
+			target->next = new;
+			break;
+		}
+		else{
+			target = target->next;
+		}
+	}
+	Nodenum++;
+	writeRankFile();//파일에 저장한다.
+	noecho();
 }
 
 void DrawRecommend(int y, int x, int blockID,int blockRotate){
-	// user code
+	DrawBlock(y,x,blockID,blockRotate,'R');
 }
 
 int recommend(RecNode *root){
 	int max=0; // 미리 보이는 블럭의 추천 배치까지 고려했을 때 얻을 수 있는 최대 점수
+	int i,j,k,n=0,num=0,o,p;
 
-	// user code
-
+	char tempfield[HEIGHT][WIDTH];
+	typedef struct _com{
+		int score;	
+		int x;
+		int y;
+		int r;
+	} Com;
+	Com *comp;
+	comp = (Com*)malloc(sizeof(Com)*34);
+	for(i=0;i<HEIGHT;i++){
+		for(j =0;j<WIDTH;j++){
+			tempfield[i][j] = root->recField[i][j];
+		}
+	}
+	for(i=0;i<4;i++){
+		for(j =-1;j<9;j++){
+			for(k=21;k>=0;k--){
+				if(CheckToMove(tempfield, nextBlock[root->level], i, k, j) == 1){
+					root->c[n] = (RecNode*)malloc(sizeof(RecNode));
+					root->c[n]->acScore = AddBlockToField(tempfield, nextBlock[root->level], i, k, j);//블록을 임의의 필드에 저장.
+					for(o=0;o<HEIGHT;o++){
+						for(p=0;p<WIDTH;p++){
+							root->c[n]->recField[o][p] = tempfield[o][p];
+						}
+					}
+					root->c[n]->level = root->level+1;
+					if(root->c[n]->level != recRoot->level){
+						root->c[n]->acScore += recommend(root->c[n]);
+					}
+					comp[n].score = root->c[n]->acScore;
+					comp[n].x = j;
+					comp[n].y = k;
+					comp[n].r = i;
+					n++;
+				}
+			}
+		}
+	}
+	for(i=1; i<n; i++){
+		if(comp[i].score >0){
+			if(comp[num].score < comp[i].score){
+				num = i;
+			}
+		}
+	}
+	recommendR = comp[num].r;
+	recommendX = comp[num].x;
+	recommendY = comp[num].y;
+	max = comp[num].score;
 	return max;
 }
 
