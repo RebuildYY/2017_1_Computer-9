@@ -17,30 +17,30 @@
 #define NUM_OF_ROTATE	4
 #define BLOCK_HEIGHT	4
 #define BLOCK_WIDTH	4
-#define BLOCK_NUM	2
+#define BLOCK_NUM	3
 
 // menu number
 #define MENU_PLAY '1'
 #define MENU_RANK '2'
+#define MENU_REC_PLAY '3'
 #define MENU_EXIT '4'
 
 // 사용자 이름의 길이
 #define NAMELEN 16
 
 #define CHILDREN_MAX 36
-
+#define VISIBLE_BLOCKS 3
 typedef struct _RecNode{
-/*
 	int lv,score;
-	char (*f)[WIDTH];
-*/
+//	char (*f)[WIDTH];
+	char f[HEIGHT][WIDTH];
 	struct _RecNode *c[CHILDREN_MAX];
-
-	int level;
-	int acScore;
-	char recField[HEIGHT][WIDTH];
-	struct _RecNode *parent;
 } RecNode;
+
+typedef struct Mod_RecNode{
+	int x, y, r, check;
+	struct Mod_RecNode *c[CHILDREN_MAX];
+} ModRecNode;
 
 //
 typedef struct _Node{
@@ -159,8 +159,9 @@ int score;			/* 점수가 저장*/
 int gameOver=0;			/* 게임이 종료되면 1로 setting된다.*/
 int timed_out;
 int recommendR,recommendY,recommendX; // 추천 블럭 배치 정보. 차례대로 회전, Y 좌표, X 좌표
+int rootdepth;
 RecNode *recRoot;
-
+ModRecNode *ModrecRoot;
 /***********************************************************
  *	테트리스의 모든  global 변수를 초기화 해준다.
  *	input	: none
@@ -371,6 +372,6 @@ int recommend(RecNode *root);
  *	return	: none
  ***********************************************************/
 void recommendedPlay();
-
+void Modified_recommend(ModRecNode* root);
 
 #endif
